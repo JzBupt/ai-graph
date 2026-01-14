@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI 术语知识图谱（可拖拽互动）</title>
+
+  <!--
+    ✅ 使用你提供的“附件字体”的方式：
+    1) 把字体文件放到本 HTML 同目录
+    2) 文件名改成 UserFont.ttf（或你也可以改下面 src 的路径/文件名）
+    3) 打开本 HTML 即可看到全站用你的字体
+  -->
+  <style>
+    @font-face{
+      font-family: "UserFont";
+      src: url("./UserFont.ttf") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root{
+      --bg: #0b1020;
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.08);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.70);
+      --line: rgba(255,255,255,0.18);
+      --shadow: 0 14px 40px rgba(0,0,0,0.35);
+      --radius: 16px;
+    }
+
+    html, body { height: 100%; margin: 0; }
+    body{
+      font-family: "UserFont", system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: radial-gradient(1200px 800px at 20% 20%, #20307a 0%, rgba(32,48,122,0.0) 60%),
+                  radial-gradient(1000px 800px at 80% 40%, #2a7a6a 0%, rgba(42,122,106,0.0) 55%),
+                  linear-gradient(180deg, #070a14 0%, #0b1020 100%);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .app{
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      height: 100%;
+      gap: 14px;
+      padding: 14px;
+      box-sizing: border-box;
+    }
+
+    .sidebar{
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-width: 280px;
+    }
+
+    .sidebar header{
+      padding: 14px 14px 10px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0));
+    }
+    .title{
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .subtitle{
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .controls{
+      padding: 12px 14px;
+      display: grid;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    .row{
+      display: grid;
+      gap: 8px;
+    }
+    label{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    input[type="search"]{
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.20);
+      color: var(--text);
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .chips{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip{
+      font-size: 12px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.18);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      transition: 160ms ease;
+    }
+    .chip:hover{ transform: translateY(-1px); }
+    .chip.active{
+      background: rgba(255,255,255,0.14);
+      border-color: rgba(255,255,255,0.22);
+    }
+
+    .detail{
+      padding: 14px;
+      overflow: auto;
+      flex: 1;
+    }
+    .card{
+      background: var(--panel2);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .card h3{
+      margin: 0 0 6px 0;
+      font-size: 15px;
+    }
+    .meta{
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .desc{
+      font-size: 13px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.88);
+    }
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .stage{
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      min-width: 320px;
+    }
+
+    .toolbar{
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+    .btn{
+      font-family: inherit;
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.20);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      transition: 150ms ease;
+    }
+    .btn:hover{ transform: translateY(-1px); }
+
+    svg{ width: 100%; height: 100%; }
+
+    .link{
+      stroke: rgba(255,255,255,0.22);
+      stroke-width: 1.3px;
+    }
+    .link.highlight{
+      stroke: rgba(255,255,255,0.70);
+      stroke-width: 2.4px;
+    }
+
+    .node circle{
+      stroke: rgba(255,255,255,0.30);
+      stroke-width: 1.2px;
+      cursor: grab;
+    }
+    .node circle:active{ cursor: grabbing; }
+
+    .node text{
+      font-size: 12px;
+      fill: rgba(255,255,255,0.92);
+      pointer-events: none;
+      paint-order: stroke;
+      stroke: rgba(0,0,0,0.45);
+      stroke-width: 3px;
+      stroke-linejoin: round;
+    }
+
+    .tooltip{
+      position: absolute;
+      z-index: 20;
+      pointer-events: none;
+      padding: 10px 12px;
+      max-width: 320px;
+      border-radius: 14px;
+      background: rgba(10,14,26,0.90);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      display: none;
+    }
+    .tooltip .t-title{ font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .tooltip .t-desc{ font-size: 12px; color: rgba(255,255,255,0.82); line-height: 1.5; }
+    .tooltip .t-rel{ margin-top: 8px; font-size: 11px; color: rgba(255,255,255,0.66); line-height: 1.45; }
+
+    @media (max-width: 980px){
+      .app{ grid-template-columns: 1fr; }
+      .sidebar{ height: 42vh; }
+      .stage{ height: calc(58vh - 28px); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <header>
+        <div class="title">AI 领域术语知识图谱</div>
+        <div class="subtitle">
+          拖拽节点改变布局；滚轮缩放；点击节点查看解释；搜索可定位术语；可按类别过滤。
+        </div>
+      </header>
+
+      <section class="controls">
+        <div class="row">
+          <label>搜索术语（支持中文/英文关键词）</label>
+          <input id="search" type="search" placeholder="例如：深度学习 / Neural Network / 监督学习…" />
+        </div>
+
+        <div class="row">
+          <label>按类别过滤</label>
+          <div class="chips" id="chips"></div>
+        </div>
+      </section>
+
+      <section class="detail" id="detail">
+        <div class="card">
+          <h3>使用说明</h3>
+          <div class="hint">
+            1) 图中每个圆点代表一个术语；连线表示“属于 / 使用 / 依赖 / 对比”等关系。<br/>
+            2) 你可以拖拽节点，观察关系如何“牵一发动全身”。<br/>
+            3) 点击节点后，左侧会显示该术语的解释与它的关键关联。<br/>
+            4) 若要用你附件字体：把字体放同目录并命名为 <b>UserFont.ttf</b>（或改 CSS）。
+          </div>
+        </div>
+        <div class="card">
+          <h3>先点一个节点试试</h3>
+          <div class="desc">我会把该术语的“通俗解释 + 它与哪些概念有关”展示在这里。</div>
+        </div>
+      </section>
+    </aside>
+
+    <main class="stage">
+      <div class="toolbar">
+        <button class="btn" id="resetView">重置视图</button>
+        <button class="btn" id="reheat">重新布局</button>
+      </div>
+
+      <div class="tooltip" id="tooltip">
+        <div class="t-title" id="ttTitle"></div>
+        <div class="t-desc" id="ttDesc"></div>
+        <div class="t-rel" id="ttRel"></div>
+      </div>
+
+      <svg id="svg" role="img" aria-label="AI术语知识图谱"></svg>
+    </main>
+  </div>
+
+  <!-- D3：用于力导向图。需要联网加载（CDN）。如需离线，可改为本地引入 d3.v7.min.js -->
+  <script src="./d3.min.js"></script>
+  <script>
+    // =========================
+    // 1) 数据：20 个常见术语 + 通俗解释 + 类别
+    // =========================
+    const nodes = [
+      { id: "AI", label: "人工智能（AI）", cat: "概念",
+        desc: "让机器表现出“像智能一样”的能力：感知、理解、推理、学习、决策与生成内容等。"
+      },
+      { id: "ML", label: "机器学习（ML）", cat: "学习范式",
+        desc: "AI 的一种实现路径：让模型从数据中学习规律，而不是只靠人写死规则。"
+      },
+      { id: "DL", label: "深度学习（DL）", cat: "学习范式",
+        desc: "机器学习的一个分支：使用“多层神经网络”自动学特征，擅长图像、语音、文本等。"
+      },
+      { id: "NN", label: "神经网络（NN）", cat: "模型",
+        desc: "由很多“神经元”连接组成的模型结构，能通过训练调整连接权重来完成任务。"
+      },
+      { id: "SL", label: "监督学习", cat: "学习范式",
+        desc: "用“带答案的数据”训练：输入 + 标注标签（正确答案），让模型学会预测。"
+      },
+      { id: "UL", label: "无监督学习", cat: "学习范式",
+        desc: "没有标准答案，模型自己从数据里找结构：聚类、降维、表示学习等。"
+      },
+      { id: "SSL", label: "自监督学习", cat: "学习范式",
+        desc: "把数据“自己变成题目”：例如遮住一句话的一部分让模型去补全，常用于大模型预训练。"
+      },
+      { id: "RL", label: "强化学习（RL）", cat: "学习范式",
+        desc: "像训练游戏玩家：通过试错获得奖励/惩罚，学会在环境中做决策以最大化长期回报。"
+      },
+      { id: "MCTS", label: "蒙特卡洛树搜索（MCTS）", cat: "方法",
+        desc: "强化学习/博弈里常用的搜索方法：通过大量模拟来估计某个动作未来的收益。"
+      },
+      { id: "Reg", label: "正则化", cat: "训练技巧",
+        desc: "一套“防止过拟合”的约束或技巧：让模型别把训练数据背下来，而是学到更通用的规律。"
+      },
+      { id: "Overfit", label: "过拟合", cat: "问题",
+        desc: "模型在训练集表现很好，但换到新数据就变差：说明它记住了细节噪声而非规律。"
+      },
+      { id: "Loss", label: "损失函数（Loss）", cat: "训练要素",
+        desc: "衡量模型预测“错得有多离谱”的指标；训练目标通常是把损失降到更小。"
+      },
+      { id: "GD", label: "梯度下降", cat: "优化",
+        desc: "最常用的优化方法之一：顺着“让损失下降最快”的方向一点点更新参数。"
+      },
+      { id: "BP", label: "反向传播（BP）", cat: "训练要素",
+        desc: "计算梯度的关键算法：把误差从输出层一层层往回传，得到每个参数该怎么改。"
+      },
+      { id: "Train", label: "训练（Training）", cat: "训练要素",
+        desc: "用数据与优化算法不断更新模型参数，使其学会完成任务的过程。"
+      },
+      { id: "Infer", label: "推理（Inference）", cat: "工程",
+        desc: "训练完成后，模型在真实输入上给出预测/输出的过程（部署时最常发生）。"
+      },
+      { id: "CV", label: "计算机视觉（CV）", cat: "应用",
+        desc: "让机器“看懂图像/视频”：识别、检测、分割、姿态估计等。"
+      },
+      { id: "NLP", label: "自然语言处理（NLP）", cat: "应用",
+        desc: "让机器“懂语言”：分类、问答、翻译、对话、总结、生成文本等。"
+      },
+      { id: "LLM", label: "大语言模型（LLM）", cat: "模型",
+        desc: "用海量文本训练、具备强生成与理解能力的语言模型（常基于 Transformer 架构）。"
+      },
+      { id: "Transform", label: "Transformer", cat: "模型",
+        desc: "现代 NLP/多模态的核心架构之一，依靠注意力机制高效建模长距离依赖。"
+      },
+    ];
+
+    // =========================
+    // 2) 关系：连线含“关系类型”
+    // =========================
+    const links = [
+      { source: "ML", target: "AI", rel: "属于/实现路径" },
+      { source: "DL", target: "ML", rel: "属于" },
+      { source: "NN", target: "DL", rel: "核心结构" },
+
+      { source: "SL", target: "ML", rel: "学习方式" },
+      { source: "UL", target: "ML", rel: "学习方式" },
+      { source: "SSL", target: "DL", rel: "常用于预训练" },
+      { source: "RL", target: "ML", rel: "学习方式" },
+
+      { source: "Loss", target: "Train", rel: "定义训练目标" },
+      { source: "GD", target: "Train", rel: "优化方法" },
+      { source: "BP", target: "GD", rel: "提供梯度" },
+      { source: "BP", target: "NN", rel: "训练算法" },
+
+      { source: "Overfit", target: "Train", rel: "常见风险" },
+      { source: "Reg", target: "Overfit", rel: "缓解/对抗" },
+      { source: "Reg", target: "Train", rel: "训练技巧" },
+
+      { source: "Infer", target: "Train", rel: "训练后阶段" },
+
+      { source: "CV", target: "DL", rel: "常用技术" },
+      { source: "NLP", target: "DL", rel: "常用技术" },
+
+      { source: "LLM", target: "NLP", rel: "重要模型类型" },
+      { source: "Transform", target: "LLM", rel: "常用架构" },
+
+      { source: "MCTS", target: "RL", rel: "常用搜索方法" },
+    ];
+
+    const categories = Array.from(new Set(nodes.map(n => n.cat)));
+
+    // =========================
+    // 3) UI：类别 chips
+    // =========================
+    const chipsEl = document.getElementById("chips");
+    let activeCats = new Set(categories); // 默认全选
+
+    function renderChips(){
+      chipsEl.innerHTML = "";
+      const allChip = document.createElement("div");
+      allChip.className = "chip active";
+      allChip.textContent = "全部";
+      allChip.onclick = () => {
+        activeCats = new Set(categories);
+        updateChipActive();
+        applyFilters();
+      };
+      chipsEl.appendChild(allChip);
+
+      categories.forEach(cat => {
+        const c = document.createElement("div");
+        c.className = "chip active";
+        c.textContent = cat;
+        c.onclick = () => {
+          if (activeCats.has(cat)) activeCats.delete(cat);
+          else activeCats.add(cat);
+
+          // 至少保留一个
+          if (activeCats.size === 0) activeCats.add(cat);
+
+          updateChipActive();
+          applyFilters();
+        };
+        chipsEl.appendChild(c);
+      });
+    }
+
+    function updateChipActive(){
+      const chips = Array.from(chipsEl.querySelectorAll(".chip"));
+      // 第一个是“全部”
+      const all = chips[0];
+      const rest = chips.slice(1);
+      const allSelected = categories.every(c => activeCats.has(c));
+      all.classList.toggle("active", allSelected);
+
+      rest.forEach((el, i) => {
+        const cat = categories[i];
+        el.classList.toggle("active", activeCats.has(cat));
+      });
+    }
+
+    renderChips();
+
+    // =========================
+    // 4) 图谱渲染：D3 力导向 + 拖拽 + 缩放 + 点击高亮
+    // =========================
+    const svg = d3.select("#svg");
+    const stage = document.querySelector(".stage");
+    const { width, height } = stage.getBoundingClientRect();
+
+    svg.attr("viewBox", [0, 0, width, height]);
+
+    const g = svg.append("g"); // zoom container
+
+    const zoom = d3.zoom()
+      .scaleExtent([0.35, 2.4])
+      .on("zoom", (event) => g.attr("transform", event.transform));
+
+    svg.call(zoom);
+
+    // tooltip
+    const tooltip = document.getElementById("tooltip");
+    const ttTitle = document.getElementById("ttTitle");
+    const ttDesc  = document.getElementById("ttDesc");
+    const ttRel   = document.getElementById("ttRel");
+
+    // color by category (不指定具体颜色也可以，但为了可读性这里给了柔和区分)
+    const color = d3.scaleOrdinal()
+      .domain(categories)
+      .range([
+        "rgba(255,255,255,0.85)",
+        "rgba(190,255,240,0.85)",
+        "rgba(190,210,255,0.85)",
+        "rgba(255,210,190,0.85)",
+        "rgba(240,240,190,0.85)",
+        "rgba(220,190,255,0.85)",
+        "rgba(190,255,200,0.85)"
+      ]);
+
+    // link + node layers
+    const link = g.append("g")
+      .attr("stroke-linecap", "round")
+      .selectAll("line")
+      .data(links)
+      .join("line")
+      .attr("class", "link");
+
+    const node = g.append("g")
+      .selectAll("g")
+      .data(nodes)
+      .join("g")
+      .attr("class", "node");
+
+    node.append("circle")
+      .attr("r", d => d.id === "AI" ? 18 : 14)
+      .attr("fill", d => color(d.cat))
+      .attr("fill-opacity", d => d.id === "AI" ? 0.95 : 0.85);
+
+    node.append("text")
+      .attr("dy", 4)
+      .attr("x", d => (d.id === "AI" ? 22 : 18))
+      .text(d => d.label);
+
+    // force simulation
+    const simulation = d3.forceSimulation(nodes)
+      .force("link", d3.forceLink(links).id(d => d.id).distance(110).strength(0.9))
+      .force("charge", d3.forceManyBody().strength(-420))
+      .force("center", d3.forceCenter(width/2, height/2))
+      .force("collide", d3.forceCollide().radius(d => (d.id === "AI" ? 34 : 28)))
+      .on("tick", ticked);
+
+    function ticked(){
+      link
+        .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+
+      node.attr("transform", d => `translate(${d.x},${d.y})`);
+    }
+
+    // drag
+    node.call(d3.drag()
+      .on("start", (event, d) => {
+        if (!event.active) simulation.alphaTarget(0.25).restart();
+        d.fx = d.x; d.fy = d.y;
+      })
+      .on("drag", (event, d) => {
+        d.fx = event.x; d.fy = event.y;
+      })
+      .on("end", (event, d) => {
+        if (!event.active) simulation.alphaTarget(0);
+        // 保持固定也可以：这里放开，拖完回到力导向
+        d.fx = null; d.fy = null;
+      })
+    );
+
+    // =========================
+    // 5) 交互：悬停提示、点击详情 + 高亮关联边
+    // =========================
+    let selectedId = null;
+
+    function showTooltip(event, d){
+      ttTitle.textContent = d.label;
+      ttDesc.textContent = d.desc;
+
+      // 列出与该点直接相连的关系（简要）
+      const rels = links
+        .filter(l => l.source.id ? (l.source.id === d.id || l.target.id === d.id) : (l.source === d.id || l.target === d.id))
+        .slice(0, 6)
+        .map(l => {
+          const s = (l.source.id || l.source);
+          const t = (l.target.id || l.target);
+          const other = (s === d.id) ? t : s;
+          const otherLabel = nodes.find(n => n.id === other)?.label ?? other;
+          return `• ${l.rel} → ${otherLabel}`;
+        });
+
+      ttRel.textContent = rels.length ? ("关联：\n" + rels.join("\n")) : "关联：暂无直接连线";
+
+      tooltip.style.display = "block";
+      moveTooltip(event);
+    }
+
+    function moveTooltip(event){
+      const pad = 14;
+      const rect = stage.getBoundingClientRect();
+      const x = event.clientX - rect.left + pad;
+      const y = event.clientY - rect.top + pad;
+
+      // 防溢出
+      const maxX = rect.width - 340;
+      const maxY = rect.height - 160;
+      tooltip.style.left = Math.max(10, Math.min(x, maxX)) + "px";
+      tooltip.style.top  = Math.max(10, Math.min(y, maxY)) + "px";
+    }
+
+    function hideTooltip(){
+      tooltip.style.display = "none";
+    }
+
+    node
+      .on("mouseenter", (event, d) => showTooltip(event, d))
+      .on("mousemove", (event) => moveTooltip(event))
+      .on("mouseleave", hideTooltip)
+      .on("click", (event, d) => {
+        event.stopPropagation();
+        selectedId = d.id;
+        renderDetail(d.id);
+        highlight(d.id);
+      });
+
+    svg.on("click", () => {
+      selectedId = null;
+      clearHighlight();
+      renderDefaultDetail();
+    });
+
+    function highlight(id){
+      // 高亮与该节点相连的边，淡化不相关节点
+      link.classed("highlight", l => {
+        const s = l.source.id || l.source;
+        const t = l.target.id || l.target;
+        return s === id || t === id;
+      });
+
+      node.select("circle")
+        .attr("opacity", d => {
+          if (d.id === id) return 1;
+          const connected = links.some(l => {
+            const s = l.source.id || l.source;
+            const t = l.target.id || l.target;
+            return (s === id && t === d.id) || (t === id && s === d.id);
+          });
+          return connected ? 0.95 : 0.25;
+        });
+
+      node.select("text")
+        .attr("opacity", d => {
+          if (d.id === id) return 1;
+          const connected = links.some(l => {
+            const s = l.source.id || l.source;
+            const t = l.target.id || l.target;
+            return (s === id && t === d.id) || (t === id && s === d.id);
+          });
+          return connected ? 0.95 : 0.18;
+        });
+
+      link.attr("opacity", l => ( (l.source.id||l.source)===id || (l.target.id||l.target)===id ) ? 0.95 : 0.18);
+    }
+
+    function clearHighlight(){
+      link.classed("highlight", false).attr("opacity", 1);
+      node.select("circle").attr("opacity", 1);
+      node.select("text").attr("opacity", 1);
+    }
+
+    // =========================
+    // 6) 左侧详情：解释 + 关联关系列表
+    // =========================
+    const detailEl = document.getElementById("detail");
+
+    function renderDefaultDetail(){
+      detailEl.innerHTML = `
+        <div class="card">
+          <h3>使用说明</h3>
+          <div class="hint">
+            1) 图中每个圆点代表一个术语；连线表示“属于 / 使用 / 依赖 / 对比”等关系。<br/>
+            2) 拖拽节点改变布局；滚轮缩放；点击节点查看解释与关联。<br/>
+            3) 若要用你附件字体：把字体放同目录并命名为 <b>UserFont.ttf</b>（或改 CSS）。
+          </div>
+        </div>
+        <div class="card">
+          <h3>先点一个节点试试</h3>
+          <div class="desc">我会把该术语的“通俗解释 + 它与哪些概念有关”展示在这里。</div>
+        </div>
+      `;
+    }
+
+    function renderDetail(id){
+      const n = nodes.find(x => x.id === id);
+      if (!n) return;
+
+      const related = links
+        .map(l => ({
+          s: (l.source.id || l.source),
+          t: (l.target.id || l.target),
+          rel: l.rel
+        }))
+        .filter(l => l.s === id || l.t === id)
+        .map(l => {
+          const otherId = (l.s === id) ? l.t : l.s;
+          const other = nodes.find(x => x.id === otherId);
+          return { rel: l.rel, otherId, otherLabel: other?.label ?? otherId, otherCat: other?.cat ?? "—" };
+        });
+
+      const relHtml = related.length
+        ? related.map(r => `
+            <div class="card" style="margin-bottom:10px">
+              <div class="meta"><span>关系：${escapeHtml(r.rel)}</span><span>对端类别：${escapeHtml(r.otherCat)}</span></div>
+              <div class="desc" style="cursor:pointer" data-jump="${r.otherId}">→ ${escapeHtml(r.otherLabel)}</div>
+              <div class="hint">（点击这条关联可跳转选中对端术语）</div>
+            </div>
+          `).join("")
+        : `<div class="card"><div class="desc">暂无直接连线关系（可在数据区补充）。</div></div>`;
+
+      detailEl.innerHTML = `
+        <div class="card">
+          <h3>${escapeHtml(n.label)}</h3>
+          <div class="meta"><span>类别：${escapeHtml(n.cat)}</span><span>节点ID：${escapeHtml(n.id)}</span></div>
+          <div class="desc">${escapeHtml(n.desc)}</div>
+        </div>
+
+        <div class="card">
+          <h3>它与哪些概念有关？</h3>
+          <div class="hint">下面列出与它“直接相连”的术语与关系。</div>
+        </div>
+
+        ${relHtml}
+      `;
+
+      // 点击关联跳转
+      detailEl.querySelectorAll("[data-jump]").forEach(el => {
+        el.addEventListener("click", () => {
+          const tid = el.getAttribute("data-jump");
+          const targetNode = nodes.find(x => x.id === tid);
+          if (!targetNode) return;
+          selectedId = tid;
+          renderDetail(tid);
+          highlight(tid);
+        });
+      });
+    }
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    renderDefaultDetail();
+
+    // =========================
+    // 7) 搜索与过滤
+    // =========================
+    const searchEl = document.getElementById("search");
+
+    function applyFilters(){
+      // 根据类别过滤节点
+      node.style("display", d => activeCats.has(d.cat) ? null : "none");
+
+      // 边：只有两端都显示才显示
+      link.style("display", l => {
+        const s = l.source.id || l.source;
+        const t = l.target.id || l.target;
+        const sn = nodes.find(x => x.id === s);
+        const tn = nodes.find(x => x.id === t);
+        return (sn && tn && activeCats.has(sn.cat) && activeCats.has(tn.cat)) ? null : "none";
+      });
+    }
+
+    function searchAndFocus(query){
+      query = query.trim().toLowerCase();
+      if (!query){
+        clearHighlight();
+        return;
+      }
+
+      // 找 label 或 id 或 desc 命中的节点
+      const found = nodes.find(n =>
+        n.label.toLowerCase().includes(query) ||
+        n.id.toLowerCase().includes(query) ||
+        n.desc.toLowerCase().includes(query)
+      );
+
+      if (found){
+        selectedId = found.id;
+
+        // 若类别没开，自动打开该类别
+        if (!activeCats.has(found.cat)){
+          activeCats.add(found.cat);
+          updateChipActive();
+          applyFilters();
+        }
+
+        renderDetail(found.id);
+        highlight(found.id);
+
+        // 视图平移到目标附近（用当前 zoom transform）
+        const t = d3.zoomTransform(svg.node());
+        const cx = width/2, cy = height/2;
+        const tx = cx - found.x * t.k;
+        const ty = cy - found.y * t.k;
+
+        svg.transition().duration(450).call(
+          zoom.transform,
+          d3.zoomIdentity.translate(tx, ty).scale(t.k)
+        );
+      }
+    }
+
+    searchEl.addEventListener("input", (e) => searchAndFocus(e.target.value));
+
+    // 初次应用过滤（全开）
+    updateChipActive();
+    applyFilters();
+
+    // =========================
+    // 8) 工具栏按钮：重置视图 / 重新布局
+    // =========================
+    document.getElementById("resetView").addEventListener("click", () => {
+      svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity);
+    });
+
+    document.getElementById("reheat").addEventListener("click", () => {
+      simulation.alpha(0.9).restart();
+    });
+
+    // 页面尺寸变化适配
+    window.addEventListener("resize", () => {
+      const rect = stage.getBoundingClientRect();
+      svg.attr("viewBox", [0, 0, rect.width, rect.height]);
+      simulation.force("center", d3.forceCenter(rect.width/2, rect.height/2));
+      simulation.alpha(0.3).restart();
+    });
+  </script>
+</body>
+</html>
